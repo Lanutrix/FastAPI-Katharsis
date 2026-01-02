@@ -11,6 +11,7 @@ services:
       target: production
     container_name: katharsis-api
     restart: unless-stopped
+    command: uvicorn src.presentation.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src
     ports:
       - "${API_PORT:-8000}:8000"
     env_file:
@@ -26,7 +27,7 @@ services:
     networks:
       - katharsis-network
     volumes:
-      - ./src:/app/src:ro  # Mount source for development (remove in production)
+      - ./src:/app/src  # Mount source for hot-reload
 
   # ---------- Celery Worker ----------
   celery-worker:
