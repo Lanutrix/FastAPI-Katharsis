@@ -21,7 +21,8 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # Database
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/katharsis"
+    database_url: str = "postgresql+asyncpg://katharsis:katharsis@localhost:5432/katharsis"
+    test_database_url: str = "postgresql+asyncpg://katharsis:katharsis@localhost:5432/katharsis_test"
 
     # JWT Settings
     jwt_secret_key: str = "your-secret-key-change-in-production"
