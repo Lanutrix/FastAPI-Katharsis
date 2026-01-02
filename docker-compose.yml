@@ -1,0 +1,141 @@
+# ============================================
+# 🔥 FastAPI-Katharsis Docker Compose
+# ============================================
+
+services:
+  # ---------- FastAPI Application ----------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: katharsis-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-katharsis}:${POSTGRES_PASSWORD:-katharsis}@db:5432/${POSTGRES_DB:-katharsis}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - katharsis-network
+    volumes:
+      - ./src:/app/src:ro  # Mount source for development (remove in production)
+
+  # ---------- Celery Worker ----------
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: katharsis-celery-worker
+    restart: unless-stopped
+    command: celery -A src.infrastructure.celery_app worker --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-katharsis}:${POSTGRES_PASSWORD:-katharsis}@db:5432/${POSTGRES_DB:-katharsis}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - katharsis-network
+
+  # ---------- Celery Beat (Scheduler) ----------
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: katharsis-celery-beat
+    restart: unless-stopped
+    command: celery -A src.infrastructure.celery_app beat --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-katharsis}:${POSTGRES_PASSWORD:-katharsis}@db:5432/${POSTGRES_DB:-katharsis}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - celery-worker
+    networks:
+      - katharsis-network
+
+  # ---------- PostgreSQL Database ----------
+  db:
+    image: postgres:16-alpine
+    container_name: katharsis-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-katharsis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-katharsis}
+      POSTGRES_DB: ${POSTGRES_DB:-katharsis}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-katharsis} -d ${POSTGRES_DB:-katharsis}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - katharsis-network
+
+  # ---------- Redis (Celery Broker) ----------
+  redis:
+    image: redis:7-alpine
+    container_name: katharsis-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - katharsis-network
+
+  # ---------- Flower (Celery Monitoring) ----------
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: katharsis-flower
+    restart: unless-stopped
+    command: celery -A src.infrastructure.celery_app flower --port=5555
+    ports:
+      - "${FLOWER_PORT:-5555}:5555"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - celery-worker
+    networks:
+      - katharsis-network
+
+# ---------- Volumes ----------
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ---------- Networks ----------
+networks:
+  katharsis-network:
+    driver: bridge
+
