@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from uuid import UUID
 
 
 @dataclass(frozen=True)
@@ -18,9 +17,8 @@ class UserCreateDTO:
 class UserResponseDTO:
     """DTO for user response data."""
 
-    id: UUID
+    id: int
     email: str
     username: str
-    is_active: bool
     created_at: datetime
 

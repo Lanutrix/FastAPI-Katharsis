@@ -1,7 +1,6 @@
 """Token service interface."""
 
 from abc import ABC, abstractmethod
-from uuid import UUID
 
 from src.application.dto.token import TokenDTO, TokenPayloadDTO
 
@@ -10,7 +9,7 @@ class ITokenService(ABC):
     """Abstract interface for JWT token operations."""
 
     @abstractmethod
-    def create_access_token(self, user_id: UUID) -> str:
+    def create_access_token(self, user_id: int) -> str:
         """
         Create an access token for a user.
 
@@ -23,7 +22,7 @@ class ITokenService(ABC):
         ...
 
     @abstractmethod
-    def create_refresh_token(self, user_id: UUID) -> str:
+    def create_refresh_token(self, user_id: int) -> str:
         """
         Create a refresh token for a user.
 
@@ -36,7 +35,7 @@ class ITokenService(ABC):
         ...
 
     @abstractmethod
-    def create_token_pair(self, user_id: UUID) -> TokenDTO:
+    def create_token_pair(self, user_id: int) -> TokenDTO:
         """
         Create both access and refresh tokens for a user.
 

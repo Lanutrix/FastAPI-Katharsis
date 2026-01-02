@@ -12,7 +12,7 @@ from src.application.dto.math import (
 from src.application.dto.user import UserResponseDTO
 from src.application.use_cases.math import MathUseCase
 from src.domain.exceptions import MathOperationError
-from src.presentation.api.dependencies.auth import get_current_active_user
+from src.presentation.api.dependencies.auth import get_current_user
 from src.presentation.api.schemas.math import (
     FactorialRequest,
     FactorialResponse,
@@ -32,7 +32,7 @@ router = APIRouter(prefix="/math", tags=["Math Operations"])
 )
 async def calculate_factorial(
     request: FactorialRequest,
-    _current_user: Annotated[UserResponseDTO, Depends(get_current_active_user)],
+    _current_user: Annotated[UserResponseDTO, Depends(get_current_user)],
 ) -> FactorialResponse:
     """
     Calculate the factorial of a non-negative integer.
@@ -63,7 +63,7 @@ async def calculate_factorial(
 )
 async def check_prime(
     request: PrimeCheckRequest,
-    _current_user: Annotated[UserResponseDTO, Depends(get_current_active_user)],
+    _current_user: Annotated[UserResponseDTO, Depends(get_current_user)],
 ) -> PrimeCheckResponse:
     """
     Check if a number is prime.
@@ -87,7 +87,7 @@ async def check_prime(
 )
 async def calculate_power(
     request: PowerRequest,
-    _current_user: Annotated[UserResponseDTO, Depends(get_current_active_user)],
+    _current_user: Annotated[UserResponseDTO, Depends(get_current_user)],
 ) -> PowerResponse:
     """
     Calculate base raised to the power of exponent.

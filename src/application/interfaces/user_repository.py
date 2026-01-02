@@ -1,7 +1,6 @@
 """User repository interface."""
 
 from abc import ABC, abstractmethod
-from uuid import UUID
 
 from src.domain.models.user import User
 
@@ -23,7 +22,7 @@ class IUserRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_by_id(self, user_id: UUID) -> User | None:
+    async def get_by_id(self, user_id: int) -> User | None:
         """
         Retrieve a user by their ID.
 
@@ -75,7 +74,7 @@ class IUserRepository(ABC):
         ...
 
     @abstractmethod
-    async def delete(self, user_id: UUID) -> bool:
+    async def delete(self, user_id: int) -> bool:
         """
         Delete a user by their ID.
 

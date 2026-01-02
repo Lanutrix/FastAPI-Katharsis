@@ -1,7 +1,6 @@
 """JWT service implementation."""
 
 from datetime import datetime, timedelta
-from uuid import UUID
 
 from jose import JWTError, jwt
 
@@ -21,7 +20,7 @@ class JWTService(ITokenService):
         self._access_token_expire_minutes = settings.jwt_access_token_expire_minutes
         self._refresh_token_expire_days = settings.jwt_refresh_token_expire_days
 
-    def _create_token(self, user_id: UUID, token_type: str, expires_delta: timedelta) -> str:
+    def _create_token(self, user_id: int, token_type: str, expires_delta: timedelta) -> str:
         """Create a JWT token with given parameters."""
         expire = datetime.utcnow() + expires_delta
         payload = {
@@ -32,17 +31,17 @@ class JWTService(ITokenService):
         }
         return jwt.encode(payload, self._secret_key, algorithm=self._algorithm)
 
-    def create_access_token(self, user_id: UUID) -> str:
+    def create_access_token(self, user_id: int) -> str:
         """Create an access token for a user."""
         expires_delta = timedelta(minutes=self._access_token_expire_minutes)
         return self._create_token(user_id, "access", expires_delta)
 
-    def create_refresh_token(self, user_id: UUID) -> str:
+    def create_refresh_token(self, user_id: int) -> str:
         """Create a refresh token for a user."""
         expires_delta = timedelta(days=self._refresh_token_expire_days)
         return self._create_token(user_id, "refresh", expires_delta)
 
-    def create_token_pair(self, user_id: UUID) -> TokenDTO:
+    def create_token_pair(self, user_id: int) -> TokenDTO:
         """Create both access and refresh tokens for a user."""
         return TokenDTO(
             access_token=self.create_access_token(user_id),
@@ -54,7 +53,7 @@ class JWTService(ITokenService):
         try:
             payload = jwt.decode(token, self._secret_key, algorithms=[self._algorithm])
             return TokenPayloadDTO(
-                sub=UUID(payload["sub"]),
+                sub=int(payload["sub"]),
                 exp=payload["exp"],
                 type=payload["type"],
             )

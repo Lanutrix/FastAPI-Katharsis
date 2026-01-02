@@ -1,7 +1,5 @@
 """User repository implementation."""
 
-from uuid import UUID
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,22 +21,22 @@ class UserRepository(IUserRepository):
             email=model.email,
             username=model.username,
             hashed_password=model.hashed_password,
-            is_active=model.is_active,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
 
     def _to_model(self, entity: User) -> UserModel:
         """Convert domain entity to SQLAlchemy model."""
-        return UserModel(
-            id=entity.id,
+        model = UserModel(
             email=entity.email,
             username=entity.username,
             hashed_password=entity.hashed_password,
-            is_active=entity.is_active,
             created_at=entity.created_at,
             updated_at=entity.updated_at,
         )
+        if entity.id is not None:
+            model.id = entity.id
+        return model
 
     async def create(self, user: User) -> User:
         """Persist a new user."""
@@ -48,7 +46,7 @@ class UserRepository(IUserRepository):
         await self._session.refresh(model)
         return self._to_domain(model)
 
-    async def get_by_id(self, user_id: UUID) -> User | None:
+    async def get_by_id(self, user_id: int) -> User | None:
         """Retrieve a user by their ID."""
         stmt = select(UserModel).where(UserModel.id == user_id)
         result = await self._session.execute(stmt)
@@ -79,7 +77,6 @@ class UserRepository(IUserRepository):
             model.email = user.email
             model.username = user.username
             model.hashed_password = user.hashed_password
-            model.is_active = user.is_active
             model.updated_at = user.updated_at
             await self._session.flush()
             await self._session.refresh(model)
@@ -87,7 +84,7 @@ class UserRepository(IUserRepository):
 
         raise ValueError(f"User with id {user.id} not found")
 
-    async def delete(self, user_id: UUID) -> bool:
+    async def delete(self, user_id: int) -> bool:
         """Delete a user by their ID."""
         stmt = select(UserModel).where(UserModel.id == user_id)
         result = await self._session.execute(stmt)

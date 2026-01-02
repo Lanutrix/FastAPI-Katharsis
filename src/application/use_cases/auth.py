@@ -1,14 +1,11 @@
 """Authentication use cases."""
 
-from uuid import UUID
-
 from src.application.dto.token import TokenDTO
 from src.application.dto.user import UserCreateDTO, UserResponseDTO
 from src.application.interfaces.password_hasher import IPasswordHasher
 from src.application.interfaces.token_service import ITokenService
 from src.application.interfaces.user_repository import IUserRepository
 from src.domain.exceptions import (
-    InactiveUserError,
     InvalidCredentialsError,
     UserAlreadyExistsError,
     UserNotFoundError,
@@ -23,19 +20,21 @@ class RegisterUserUseCase:
         self,
         user_repository: IUserRepository,
         password_hasher: IPasswordHasher,
+        token_service: ITokenService,
     ):
         self._user_repository = user_repository
         self._password_hasher = password_hasher
+        self._token_service = token_service
 
-    async def execute(self, dto: UserCreateDTO) -> UserResponseDTO:
+    async def execute(self, dto: UserCreateDTO) -> TokenDTO:
         """
-        Register a new user.
+        Register a new user and return tokens.
 
         Args:
             dto: User creation data
 
         Returns:
-            Created user response
+            Token pair (access + refresh)
 
         Raises:
             UserAlreadyExistsError: If email already exists
@@ -58,13 +57,7 @@ class RegisterUserUseCase:
 
         created_user = await self._user_repository.create(user)
 
-        return UserResponseDTO(
-            id=created_user.id,
-            email=created_user.email,
-            username=created_user.username,
-            is_active=created_user.is_active,
-            created_at=created_user.created_at,
-        )
+        return self._token_service.create_token_pair(created_user.id)
 
 
 class LoginUserUseCase:
@@ -93,7 +86,6 @@ class LoginUserUseCase:
 
         Raises:
             InvalidCredentialsError: If credentials are invalid
-            InactiveUserError: If user account is inactive
         """
         user = await self._user_repository.get_by_email(email)
         if not user:
@@ -101,9 +93,6 @@ class LoginUserUseCase:
 
         if not self._password_hasher.verify(password, user.hashed_password):
             raise InvalidCredentialsError()
-
-        if not user.is_active:
-            raise InactiveUserError()
 
         return self._token_service.create_token_pair(user.id)
 
@@ -132,16 +121,12 @@ class RefreshTokenUseCase:
         Raises:
             InvalidTokenError: If refresh token is invalid
             UserNotFoundError: If user no longer exists
-            InactiveUserError: If user account is inactive
         """
         payload = self._token_service.verify_refresh_token(refresh_token)
 
         user = await self._user_repository.get_by_id(payload.sub)
         if not user:
             raise UserNotFoundError(str(payload.sub))
-
-        if not user.is_active:
-            raise InactiveUserError()
 
         return self._token_service.create_token_pair(user.id)
 
@@ -152,7 +137,7 @@ class GetCurrentUserUseCase:
     def __init__(self, user_repository: IUserRepository):
         self._user_repository = user_repository
 
-    async def execute(self, user_id: UUID) -> UserResponseDTO:
+    async def execute(self, user_id: int) -> UserResponseDTO:
         """
         Get user by ID.
 
@@ -173,7 +158,6 @@ class GetCurrentUserUseCase:
             id=user.id,
             email=user.email,
             username=user.username,
-            is_active=user.is_active,
             created_at=user.created_at,
         )
 

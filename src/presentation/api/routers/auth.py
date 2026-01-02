@@ -12,7 +12,6 @@ from src.application.use_cases.auth import (
     RegisterUserUseCase,
 )
 from src.domain.exceptions import (
-    InactiveUserError,
     InvalidCredentialsError,
     InvalidTokenError,
     UserAlreadyExistsError,
@@ -22,7 +21,7 @@ from src.infrastructure.db.repositories.user import UserRepository
 from src.infrastructure.db.session import get_async_session
 from src.infrastructure.external.jwt_service import JWTService
 from src.infrastructure.external.password_hasher import PasswordHasher
-from src.presentation.api.dependencies.auth import get_current_active_user
+from src.presentation.api.dependencies.auth import get_current_user
 from src.presentation.api.schemas.token import Token, TokenRefresh
 from src.presentation.api.schemas.user import UserAuth, UserCreate, UserResponse
 
@@ -31,16 +30,16 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post(
     "/register",
-    response_model=UserResponse,
+    response_model=Token,
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
 )
 async def register(
     user_data: UserCreate,
     session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> UserResponse:
+) -> Token:
     """
-    Register a new user account.
+    Register a new user account and return tokens.
 
     - **email**: Valid email address (must be unique)
     - **username**: Username (3-50 characters, must be unique)
@@ -48,8 +47,9 @@ async def register(
     """
     user_repository = UserRepository(session)
     password_hasher = PasswordHasher()
+    jwt_service = JWTService()
 
-    use_case = RegisterUserUseCase(user_repository, password_hasher)
+    use_case = RegisterUserUseCase(user_repository, password_hasher, jwt_service)
 
     dto = UserCreateDTO(
         email=user_data.email,
@@ -65,12 +65,9 @@ async def register(
             detail=str(e),
         )
 
-    return UserResponse(
-        id=result.id,
-        email=result.email,
-        username=result.username,
-        is_active=result.is_active,
-        created_at=result.created_at,
+    return Token(
+        access_token=result.access_token,
+        refresh_token=result.refresh_token,
     )
 
 
@@ -103,16 +100,10 @@ async def login(
             detail=str(e),
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except InactiveUserError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e),
-        )
 
     return Token(
         access_token=result.access_token,
         refresh_token=result.refresh_token,
-        token_type=result.token_type,
     )
 
 
@@ -149,16 +140,10 @@ async def refresh_token(
             detail=str(e),
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except InactiveUserError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e),
-        )
 
     return Token(
         access_token=result.access_token,
         refresh_token=result.refresh_token,
-        token_type=result.token_type,
     )
 
 
@@ -168,7 +153,7 @@ async def refresh_token(
     summary="Get current user",
 )
 async def get_me(
-    current_user: Annotated[UserResponseDTO, Depends(get_current_active_user)],
+    current_user: Annotated[UserResponseDTO, Depends(get_current_user)],
 ) -> UserResponse:
     """
     Get the currently authenticated user's information.
@@ -179,7 +164,6 @@ async def get_me(
         id=current_user.id,
         email=current_user.email,
         username=current_user.username,
-        is_active=current_user.is_active,
         created_at=current_user.created_at,
     )
 

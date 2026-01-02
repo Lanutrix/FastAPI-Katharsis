@@ -58,25 +58,3 @@ async def get_current_user(
         )
 
 
-async def get_current_active_user(
-    current_user: Annotated[UserResponseDTO, Depends(get_current_user)],
-) -> UserResponseDTO:
-    """
-    Dependency to get the current active user.
-
-    Args:
-        current_user: Current authenticated user
-
-    Returns:
-        Current active user data
-
-    Raises:
-        HTTPException: If user is inactive
-    """
-    if not current_user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Inactive user",
-        )
-    return current_user
-

@@ -30,13 +30,6 @@ class InvalidCredentialsError(DomainException):
         super().__init__("Invalid email or password")
 
 
-class InactiveUserError(DomainException):
-    """Raised when an inactive user tries to perform an action."""
-
-    def __init__(self):
-        super().__init__("User account is inactive")
-
-
 class InvalidTokenError(DomainException):
     """Raised when a token is invalid or expired."""
 
