@@ -3,43 +3,15 @@
 from pydantic import BaseModel
 
 
-class FactorialRequest(BaseModel):
-    """Schema for factorial calculation request."""
+class PrimesListRequest(BaseModel):
+    """Schema for primes list request."""
 
-    number: int
-
-
-class FactorialResponse(BaseModel):
-    """Schema for factorial calculation response."""
-
-    number: int
-    result: int
+    limit: int
 
 
-class PrimeCheckRequest(BaseModel):
-    """Schema for prime check request."""
+class PrimesListResponse(BaseModel):
+    """Schema for primes list response."""
 
-    number: int
-
-
-class PrimeCheckResponse(BaseModel):
-    """Schema for prime check response."""
-
-    number: int
-    is_prime: bool
-
-
-class PowerRequest(BaseModel):
-    """Schema for power calculation request."""
-
-    base: float
-    exponent: float
-
-
-class PowerResponse(BaseModel):
-    """Schema for power calculation response."""
-
-    base: float
-    exponent: float
-    result: float
-
+    limit: int
+    primes: list[int]
+    count: int

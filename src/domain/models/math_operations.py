@@ -1,58 +1,32 @@
 """Pure domain functions for mathematical operations."""
 
 
-def factorial(n: int) -> int:
+def primes_up_to(n: int) -> list[int]:
     """
-    Calculate the factorial of a non-negative integer.
+    Get all prime numbers from 1 to n (inclusive).
+
+    Uses the Sieve of Eratosthenes algorithm for efficiency.
 
     Args:
-        n: Non-negative integer
+        n: Upper limit (inclusive)
 
     Returns:
-        The factorial of n (n!)
+        List of all prime numbers from 1 to n
 
     Raises:
-        ValueError: If n is negative
+        ValueError: If n is less than 1
     """
-    if n < 0:
-        raise ValueError("Factorial is not defined for negative numbers")
-    if n <= 1:
-        return 1
-    result = 1
-    for i in range(2, n + 1):
-        result *= i
-    return result
-
-
-def is_prime(n: int) -> bool:
-    """
-    Check if a number is prime.
-
-    Args:
-        n: Integer to check
-
-    Returns:
-        True if n is prime, False otherwise
-    """
+    if n < 1:
+        raise ValueError("Input must be at least 1")
     if n < 2:
-        return False
-    if n == 2:
-        return True
-    if n % 2 == 0:
-        return False
-    return all(n % i != 0 for i in range(3, int(n ** 0.5) + 1, 2))
+        return []
 
+    sieve = [True] * (n + 1)
+    sieve[0] = sieve[1] = False
 
-def power(base: float, exponent: float) -> float:
-    """
-    Calculate base raised to the power of exponent.
+    for i in range(2, int(n**0.5) + 1):
+        if sieve[i]:
+            for j in range(i * i, n + 1, i):
+                sieve[j] = False
 
-    Args:
-        base: The base number
-        exponent: The exponent
-
-    Returns:
-        base ** exponent
-    """
-    return base**exponent
-
+    return [i for i, is_prime in enumerate(sieve) if is_prime]
