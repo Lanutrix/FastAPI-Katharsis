@@ -51,25 +51,6 @@ services:
     networks:
       - katharsis-network
 
-  # ---------- Celery Beat (Scheduler) ----------
-  celery-beat:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-    container_name: katharsis-celery-beat
-    restart: unless-stopped
-    command: celery -A src.infrastructure.celery_app beat --loglevel=info
-    env_file:
-      - .env
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-katharsis}:${POSTGRES_PASSWORD:-katharsis}@db:5432/${POSTGRES_DB:-katharsis}
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - celery-worker
-    networks:
-      - katharsis-network
-
   # ---------- PostgreSQL Database ----------
   db:
     image: postgres:16-alpine

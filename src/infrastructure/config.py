@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
 
+    # Redis & Celery
+    redis_url: str = "redis://localhost:6379/0"
+
     # CORS
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8000"]
 
